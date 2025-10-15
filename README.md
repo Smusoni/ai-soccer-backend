@@ -1,20 +1,7 @@
-# AI Soccer Backend (MVP)
+# AI Soccer Frontend (MVP)
+Simple HTML/JS client for uploading a video + attributes to the backend and rendering a report.
 
-Simple Node/Express server with a mock analyzer and player similarity.
-- `POST /analyze` (multipart) with fields:
-  - `video`: the uploaded file
-  - `attributes`: JSON string containing: `height_cm`, `dominant_foot` (`left`|`right`|`two-footed`), `position` (`winger`|`striker`|`midfielder`|`defender`|`goalkeeper`), `age`, and optional `pace|dribbling|passing|shooting` (0..1)
-- Returns: `{ session_id, metrics, suggestions, similar_players }`
-- `GET /sessions/:id` to fetch a past result.
-
-## Run locally
-```bash
-npm install
-npm start
-# Server listens on http://localhost:3000
-```
-
-## Notes
-- Analysis is mocked. Replace `analyzeVideoMock()` and `extractFeatures()` with real metrics.
-- Pros dataset in `pros.json` (features length = 21). Update as needed.
-- In production, store uploads in S3 or similar.
+## Usage
+- Host this (Replit "HTML/CSS/JS" or any static host).
+- Make sure the backend is running, default is http://localhost:3000.
+- Update `BACKEND` in the inline script if needed.

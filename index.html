@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SkillzWithSyd – AI Client</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100">
+  <div class="max-w-3xl mx-auto p-4 space-y-4">
+    <header>
+      <h1 class="text-2xl font-extrabold">SkillzWithSyd – AI Upload</h1>
+      <p class="text-slate-600">Upload your clip and attributes. Get a report + similar players.</p>
+    </header>
+
+    <section class="bg-white rounded-2xl shadow p-4 space-y-4">
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="space-y-2">
+          <label class="block text-sm font-medium">Video</label>
+          <input id="video" type="file" accept="video/*" class="w-full text-sm" />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium">Height (cm)</label>
+          <input id="height" type="number" value="178" class="w-full border rounded-xl p-2" />
+          <label class="block text-sm font-medium">Age</label>
+          <input id="age" type="number" value="20" class="w-full border rounded-xl p-2" />
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium">Dominant Foot</label>
+          <select id="foot" class="w-full border rounded-xl p-2">
+            <option value="right">Right</option>
+            <option value="left">Left</option>
+            <option value="two-footed">Two-footed</option>
+          </select>
+          <label class="block text-sm font-medium">Position</label>
+          <select id="position" class="w-full border rounded-xl p-2">
+            <option value="winger">Winger</option>
+            <option value="striker">Striker</option>
+            <option value="midfielder">Midfielder</option>
+            <option value="defender">Defender</option>
+            <option value="goalkeeper">Goalkeeper</option>
+          </select>
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-sm font-medium">Self-ratings (0–1)</label>
+          <div class="grid grid-cols-2 gap-2">
+            <div><span class="text-xs text-slate-500">Pace</span><input id="pace" type="number" step="0.01" min="0" max="1" value="0.7" class="w-full border rounded-xl p-2" /></div>
+            <div><span class="text-xs text-slate-500">Dribbling</span><input id="dribbling" type="number" step="0.01" min="0" max="1" value="0.7" class="w-full border rounded-xl p-2" /></div>
+            <div><span class="text-xs text-slate-500">Passing</span><input id="passing" type="number" step="0.01" min="0" max="1" value="0.6" class="w-full border rounded-xl p-2" /></div>
+            <div><span class="text-xs text-slate-500">Shooting</span><input id="shooting" type="number" step="0.01" min="0" max="1" value="0.6" class="w-full border rounded-xl p-2" /></div>
+          </div>
+        </div>
+      </div>
+
+      <button id="analyze" class="w-full py-3 rounded-xl bg-black text-white font-semibold">Analyze</button>
+    </section>
+
+    <section id="result" class="bg-white rounded-2xl shadow p-4 hidden">
+      <h2 class="text-xl font-bold mb-2">Report</h2>
+      <div id="metrics" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center"></div>
+      <div class="mt-4">
+        <h3 class="font-semibold">Coaching Suggestions</h3>
+        <ul id="suggestions" class="list-disc ml-6 text-sm"></ul>
+      </div>
+      <div class="mt-4">
+        <h3 class="font-semibold">Similar Players</h3>
+        <div id="players" class="grid md:grid-cols-2 gap-2"></div>
+      </div>
+    </section>
+
+    <footer class="text-xs text-slate-500">
+      Point the frontend to your deployed backend URL (default: http://localhost:3000).
+    </footer>
+  </div>
+
+  <script>
+    const BACKEND = (window.BACKEND_URL || 'http://localhost:3000');
+
+    function renderMetrics(m) {
+      const el = document.getElementById('metrics');
+      el.innerHTML = '';
+      const items = [
+        ['Knee Flex (°)', m.kneeFlex],
+        ['Body Lean (°)', m.bodyLean],
+        ['Sprint Tempo', m.sprintTempo],
+        ['Touches', m.touches]
+      ];
+      for (const [k,v] of items) {
+        const div = document.createElement('div');
+        div.className = 'p-3 border rounded-xl';
+        div.innerHTML = `<div class="text-xs text-slate-500">${k}</div><div class="text-xl font-extrabold">${v}</div>`;
+        el.appendChild(div);
+      }
+    }
+
+    function renderSuggestions(list) {
+      const ul = document.getElementById('suggestions');
+      ul.innerHTML = '';
+      list.forEach(s => {
+        const li = document.createElement('li');
+        li.textContent = s;
+        ul.appendChild(li);
+      });
+    }
+
+    function renderPlayers(players) {
+      const wrap = document.getElementById('players');
+      wrap.innerHTML = '';
+      players.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'p-3 border rounded-xl flex items-center justify-between';
+        card.innerHTML = `<div><div class="font-semibold">${p.name}</div><div class="text-xs text-slate-500">${p.position} • ${p.club}</div></div><div class="text-sm">Sim: ${(p.similarity*100).toFixed(1)}%</div>`;
+        wrap.appendChild(card);
+      });
+    }
+
+    document.getElementById('analyze').addEventListener('click', async () => {
+      const file = document.getElementById('video').files[0];
+      if (!file) { alert('Please choose a video'); return; }
+      const attrs = {
+        height_cm: Number(document.getElementById('height').value),
+        age: Number(document.getElementById('age').value),
+        dominant_foot: document.getElementById('foot').value,
+        position: document.getElementById('position').value,
+        pace: Number(document.getElementById('pace').value),
+        dribbling: Number(document.getElementById('dribbling').value),
+        passing: Number(document.getElementById('passing').value),
+        shooting: Number(document.getElementById('shooting').value)
+      };
+      const fd = new FormData();
+      fd.append('video', file);
+      fd.append('attributes', JSON.stringify(attrs));
+
+      const btn = document.getElementById('analyze');
+      btn.disabled = true; btn.textContent = 'Analyzing…';
+      try {
+        const res = await fetch(`${BACKEND}/analyze`, { method: 'POST', body: fd });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || 'Failed');
+        document.getElementById('result').classList.remove('hidden');
+        renderMetrics(json.metrics);
+        renderSuggestions(json.suggestions);
+        renderPlayers(json.similar_players);
+        btn.textContent = 'Analyze Again';
+      } catch (e) {
+        alert(e.message);
+        btn.textContent = 'Analyze';
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
